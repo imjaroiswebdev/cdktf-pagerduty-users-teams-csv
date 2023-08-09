@@ -1,0 +1,7 @@
+key,name,email,role,job_title,country_code,phone,sms,team
+wile.e.coyote,Wile E. Coyote,wile.e.coyote@example.com,user,Lead,+1,5555551234,5555551234,cloud
+daffy.duck,Daffy Duck,daffy.duck@example.com,user,ITSM,+1,5555551234,5555551234,cloud
+security1,Security 1,security1@example.com,user,Security Lead,+1,5555551234,5555551234,security
+security2,Security 2,security2@example.com,limited_user,Security,+1,5555551234,5555551234,security
+stakeholder1,Stakeholder 1,stakeholder1@example.com,read_only_user,Exec Stakeholder,+1,5555551234,5555551234,exec_stakeholders
+stakeholder2,Stakeholder 2,stakeholder2@example.com,read_only_user,Exec Stakeholder,+1,5555551234,5555551234,exec_stakeholders
