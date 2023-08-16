@@ -10,6 +10,7 @@ import (
 	"github.com/aws/jsii-runtime-go"
 	pagerdutyProvider "github.com/cdktf/cdktf-provider-pagerduty-go/pagerduty/v9/provider"
 	"github.com/cdktf/cdktf-provider-pagerduty-go/pagerduty/v9/team"
+	"github.com/cdktf/cdktf-provider-pagerduty-go/pagerduty/v9/teammembership"
 	"github.com/cdktf/cdktf-provider-pagerduty-go/pagerduty/v9/user"
 	"github.com/hashicorp/terraform-cdk-go/cdktf"
 )
@@ -37,8 +38,9 @@ func NewMyStack(scope constructs.Construct, id string) cdktf.TerraformStack {
 
 	usersData := generateUserData(usersCSVData)
 
-	generateUsers(stack, usersData)
-	generateTeams(stack, usersData)
+	users := generateUsers(stack, usersData)
+	teams := generateTeams(stack, usersData)
+	generateTeamMemberships(stack, usersData, users, teams)
 
 	// cdktf.NewTerraformOutput(stack, jsii.String("user_local_1_config"), &cdktf.TerraformOutputConfig{
 	// 	Value: pagerDutyLocalUser1,
@@ -57,6 +59,7 @@ type UserRecord struct {
 	Phone       string
 	Sms         string
 	Team        string
+	// TODO: Add Team Role for team memberships to work correctly.
 }
 
 func generateUserData(csvData [][]string) []UserRecord {
@@ -100,25 +103,64 @@ func generateUserData(csvData [][]string) []UserRecord {
 	return usersData
 }
 
-func generateUsers(scope constructs.Construct, usersData []UserRecord) []user.User {
-	users := []user.User{}
+func generateUsers(scope constructs.Construct, usersData []UserRecord) map[string]user.User {
+	users := make(map[string]user.User)
 	for _, u := range usersData {
-		newUser := user.NewUser(scope, jsii.String(u.Key), &user.UserConfig{
+		users[u.Email] = user.NewUser(scope, jsii.String(u.Key), &user.UserConfig{
 			Name:     jsii.String(u.Name),
 			Email:    jsii.String(u.Email),
 			Role:     jsii.String(u.Role),
 			JobTitle: jsii.String(u.JobTitle),
 		})
-		users = append(users, newUser)
 	}
 
 	return users
 }
 
-func generateTeams(scope constructs.Construct, usersData []UserRecord) []team.Team {
-	teams := []team.Team{}
+func generateTeams(scope constructs.Construct, usersCSVData []UserRecord) map[string]team.Team {
+	teams := make(map[string]team.Team)
+
+	teamNames := []string{}
+	for _, u := range usersCSVData {
+		teamNames = append(teamNames, u.Team)
+	}
+	teamNames = unique(teamNames)
+
+	for _, name := range teamNames {
+		teams[name] = team.NewTeam(scope, jsii.String(name), &team.TeamConfig{
+			Name: jsii.String(name),
+		})
+	}
 
 	return teams
+}
+
+func generateTeamMemberships(scope constructs.Construct, usersCSVData []UserRecord, users map[string]user.User, teams map[string]team.Team) map[string]teammembership.TeamMembership {
+	teamMemberships := make(map[string]teammembership.TeamMembership)
+	// template for "<team-name>_<user-name>"
+	for _, u := range usersCSVData {
+		tmName := fmt.Sprintf("%s_%s", u.Team, u.Key)
+		teamMemberships[tmName] = teammembership.NewTeamMembership(scope, jsii.String(tmName), &teammembership.TeamMembershipConfig{
+			TeamId: teams[u.Team].Id(),
+			UserId: users[u.Email].Id(),
+		})
+	}
+
+	return teamMemberships
+}
+
+func unique(input []string) []string {
+	u := make([]string, 0, len(input))
+	m := make(map[string]bool)
+
+	for _, val := range input {
+		if _, ok := m[val]; !ok {
+			m[val] = true
+			u = append(u, val)
+		}
+	}
+
+	return u
 }
 
 func main() {
