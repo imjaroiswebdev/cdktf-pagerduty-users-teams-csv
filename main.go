@@ -59,7 +59,7 @@ type UserRecord struct {
 	Phone       string
 	Sms         string
 	Team        string
-	// TODO: Add Team Role for team memberships to work correctly.
+	TeamRole    string
 }
 
 func generateUserData(csvData [][]string) []UserRecord {
@@ -92,6 +92,8 @@ func generateUserData(csvData [][]string) []UserRecord {
 					rec.Sms = field
 				case 8:
 					rec.Team = field
+				case 9:
+					rec.TeamRole = field
 				default:
 					fmt.Printf("j is out of range for value %d", j)
 				}
@@ -143,6 +145,7 @@ func generateTeamMemberships(scope constructs.Construct, usersCSVData []UserReco
 		teamMemberships[tmName] = teammembership.NewTeamMembership(scope, jsii.String(tmName), &teammembership.TeamMembershipConfig{
 			TeamId: teams[u.Team].Id(),
 			UserId: users[u.Email].Id(),
+			Role:   jsii.String(u.TeamRole),
 		})
 	}
 
